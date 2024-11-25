@@ -87,3 +87,36 @@ relatorio_ensemble = classification_report(y_test, y_pred)
 print("Resultados para o Comitê de Classificadores (Ensemble):")
 print(f"Acurácia: {acuracia_ensemble}")
 print(f"Relatório de Classificação:\n{relatorio_ensemble}")
+
+
+voting_clf = VotingClassifier(
+    estimators=[
+        ('naive_bayes', modelos['Naive Bayes']),
+        ('knn', modelos['K-Nearest Neighbors']),
+        ('decision_tree', modelos['Árvore de Decisão'])
+    ],
+    voting='soft'
+)
+voting_clf.fit(X_train, y_train)
+
+probabilidades = voting_clf.predict_proba(df_features)[:, 1]
+
+# Adicionar as probabilidades ao DataFrame
+df['Probabilidade_Good_with_Children'] = probabilidades
+
+df_classificado = df.sort_values(by='Probabilidade_Good_with_Children', ascending=False)
+
+print("Raças com maior probabilidade de serem boas com crianças (segundo o modelo):")
+print(df_classificado[['Name', 'Probabilidade_Good_with_Children']].head(10))
+
+# Comparar previsões com valores reais
+df_comparacao = df[['Name', 'Good with Children', 'Probabilidade_Good_with_Children']]
+print(df_comparacao.head(20))
+
+# Analisar a importância das características
+importances = modelos['Árvore de Decisão'].feature_importances_
+features = df_features.columns
+feature_importance = pd.DataFrame({'Característica': features, 'Importância': importances})
+feature_importance = feature_importance.sort_values(by='Importância', ascending=False)
+print("Importância das Características:")
+print(feature_importance)
