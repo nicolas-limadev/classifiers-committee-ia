@@ -7,6 +7,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import VotingClassifier
 from sklearn.metrics import accuracy_score, classification_report
+from sklearn.preprocessing import StandardScaler
 
 # Carregar o conjunto de dados
 caminho_arquivo = './base/Dog Breads Around The World.csv'
@@ -98,25 +99,70 @@ voting_clf = VotingClassifier(
     voting='soft'
 )
 voting_clf.fit(X_train, y_train)
-
 probabilidades = voting_clf.predict_proba(df_features)[:, 1]
-
-# Adicionar as probabilidades ao DataFrame
 df['Probabilidade_Good_with_Children'] = probabilidades
 
 df_classificado = df.sort_values(by='Probabilidade_Good_with_Children', ascending=False)
 
-print("Raças com maior probabilidade de serem boas com crianças (segundo o modelo):")
+print("="*80)
+print("Raças com maior probabilidade de serem boas com crianças (Comite de Classificadores):")
 print(df_classificado[['Name', 'Probabilidade_Good_with_Children']].head(10))
 
-# Comparar previsões com valores reais
+print("="*80)
 df_comparacao = df[['Name', 'Good with Children', 'Probabilidade_Good_with_Children']]
-print(df_comparacao.head(20))
+print("Valores reais e previstos de 30 raças (Comite de Classificadores):")
+print(df_comparacao.head(30))
 
 # Analisar a importância das características
 importances = modelos['Árvore de Decisão'].feature_importances_
 features = df_features.columns
 feature_importance = pd.DataFrame({'Característica': features, 'Importância': importances})
 feature_importance = feature_importance.sort_values(by='Importância', ascending=False)
-print("Importância das Características:")
+print("="*80)
+print("Importância das Características (Árvore de Decisão):")
 print(feature_importance)
+
+
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+# Dicionário para armazenar modelos e resultados
+modelos = {}
+resultados = {}
+
+# Modelo 1: Naive Bayes Gaussiano
+modelo_nb = GaussianNB()
+modelo_nb.fit(X_train, y_train)
+probabilidades_nb = modelo_nb.predict_proba(df_features)[:, 1]
+df['Probabilidade_NB'] = probabilidades_nb
+df_classificado_nb = df.sort_values(by='Probabilidade_NB', ascending=False)
+
+print("="*80)
+print("Resultados do Naive Bayes Gaussiano:")
+print("Raças com maior probabilidade de serem boas com crianças (Naive Bayes):")
+print(df_classificado_nb[['Name', 'Probabilidade_NB']].head(10))
+
+# Modelo 2: K-Nearest Neighbors
+modelo_knn = KNeighborsClassifier(n_neighbors=5)
+modelo_knn.fit(X_train_scaled, y_train)
+probabilidades_knn = modelo_knn.predict_proba(scaler.transform(df_features))[:, 1]
+df['Probabilidade_KNN'] = probabilidades_knn
+df_classificado_knn = df.sort_values(by='Probabilidade_KNN', ascending=False)
+
+print("="*80)
+print("Resultados do K-Nearest Neighbors:")
+print("Raças com maior probabilidade de serem boas com crianças (KNN):")
+print(df_classificado_knn[['Name', 'Probabilidade_KNN']].head(10))
+
+# Modelo 3: Árvore de Decisão
+modelo_arvore = DecisionTreeClassifier(max_depth=5, random_state=42)
+modelo_arvore.fit(X_train, y_train)
+probabilidades_arvore = modelo_arvore.predict_proba(df_features)[:, 1]
+df['Probabilidade_Arvore'] = probabilidades_arvore
+df_classificado_arvore = df.sort_values(by='Probabilidade_Arvore', ascending=False)
+
+print("="*80)
+print("Resultados da Árvore de Decisão:")
+print("Raças com maior probabilidade de serem boas com crianças (Árvore de Decisão):")
+print(df_classificado_arvore[['Name', 'Probabilidade_Arvore']].head(10))
